@@ -17,6 +17,7 @@ local playerInfos = {}
 local lastSentInfos = {}
 
 local PROXIMITY_THRESHOLD = 20
+local MAX_DISTANCE = 5
 
 local timeSpent = 0
 local tickRate = 1/40
@@ -51,7 +52,16 @@ end
 network:bindUnreliableServerEvent("CharacterReplication", function(player, writtenBuffer)
 	BufferReader:setBuffer(writtenBuffer)
 	local info = BufferReader:readStructs(infoStruct)
-	print(info)
+	local lastPos = playerPositions[player]
+	local newPos = info.writtenCFrame.Position
+	if lastPos then
+		local distance = (newPos - lastPos).Magnitude
+		local maxAllowedDistance = MAX_DISTANCE * tickRate  
+		if distance > maxAllowedDistance then
+			warn(`{player} is schmovin and groovin too fast`)
+			return 
+		end
+	end
 	playerPositions[player] = info.writtenCFrame.Position
 	playerInfos[player] = prepData(player, info)
 end)
