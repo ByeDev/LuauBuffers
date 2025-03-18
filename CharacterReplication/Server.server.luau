@@ -32,18 +32,19 @@ end
 
 local function proximityDetermination()
 	for playerA, posA in playerPositions do
-		if not activePlayers[playerA] then continue end
-		if lastSentInfos[playerA] ~= playerInfos[playerA].originalTime then
-			BufferWriter:clear()
-			BufferWriter:writeStructs(clientStruct, playerInfos[playerA])
-			local madeBuffer = BufferWriter:createBuffer()
-			for playerB, posB in playerPositions do
-				if activePlayers[playerB] and playerA ~= playerB and (posA - posB).Magnitude <= PROXIMITY_THRESHOLD then
-					network:fireUnreliableClient("CharacterReplication", playerB, madeBuffer)
-				end
-			end
-			lastSentInfos[playerA] = playerInfos[playerA].originalTime
+		if not activePlayers[playerA] or lastSentInfos[playerA] == playerInfos[playerA].originalTime then 
+			continue 
 		end
+		BufferWriter:clear()
+		BufferWriter:writeStructs(clientStruct, playerInfos[playerA])
+		local madeBuffer = BufferWriter:createBuffer()
+		for playerB, posB in playerPositions do
+			if playerA == playerB or not activePlayers[playerB] or (posA - posB).Magnitude > PROXIMITY_THRESHOLD then
+				continue
+			end
+			network:fireUnreliableClient("CharacterReplication", playerB, madeBuffer)
+		end
+		lastSentInfos[playerA] = playerInfos[playerA].originalTime
 	end
 end
 
