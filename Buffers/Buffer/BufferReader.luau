@@ -27,15 +27,14 @@ local offsetValues = {
 
 local shiftValues = {1, 128, 16384, 2097152, 268435456, 34359738368, 4398046511104, 562949953421312, 72057594037927936, 9223372036854775808}
 
-local bytePositions= {}
-local buffers = {}
+
 
 local DEFAULT_SIZE = 1024 
 
 function bufferReader.new(inputBuffer : buffer?) : bufferReader
 	local self = setmetatable({}, bufferReader)
-	bytePositions[self]  = 0
-	buffers[self] = inputBuffer or buffer.create(DEFAULT_SIZE)
+	self.bytePositions  = 0
+	self.buffer = inputBuffer or buffer.create(DEFAULT_SIZE)
 	return self
 end
 
@@ -44,8 +43,8 @@ local function zigZagDecode(value : number) : number
 end
 
 local function readOneByteVLQ(self : bufferReader) : (number, boolean)
-	local byte = buffer.readu8(buffers[self], bytePositions[self] )
-	bytePositions[self]  += 1
+	local byte = buffer.readu8(self.buffer, self.bytePositions )
+	self.bytePositions  += 1
 	local value = byte % 128
 	local keepReading = (byte >= 128)
 
@@ -73,29 +72,29 @@ end
 
 function bufferReader:readi8() : number
 	local offset = offsetValues.i8
-	local value = buffer.readi8(buffers[self], bytePositions[self])
-	bytePositions[self]  += offset
+	local value = buffer.readi8(self.buffer, self.bytePositions)
+	self.bytePositions  += offset
 	return value
 end
 
 function bufferReader:readu8() : number
 	local offset = offsetValues.u8
-	local value = buffer.readu8(buffers[self], bytePositions[self])
-	bytePositions[self]  += offset
+	local value = buffer.readu8(self.buffer, self.bytePositions)
+	self.bytePositions  += offset
 	return value
 end
 
 function bufferReader:readi16() : number
 	local offset = offsetValues.i16
-	local value = buffer.readi16(buffers[self], bytePositions[self])
-	bytePositions[self]  += offset
+	local value = buffer.readi16(self.buffer, self.bytePositions)
+	self.bytePositions  += offset
 	return value
 end
 
 function bufferReader:readu16() : number
 	local offset = offsetValues.u16
-	local value = buffer.readu16(buffers[self], bytePositions[self])
-	bytePositions[self]  += offset
+	local value = buffer.readu16(self.buffer, self.bytePositions)
+	self.bytePositions  += offset
 	return value
 end
 
@@ -126,38 +125,38 @@ end
 
 function bufferReader:readu24() : number
 	local offset = offsetValues.u24
-	local u16 = buffer.readu16(buffers[self], bytePositions[self])
-	local u8 = buffer.readu8(buffers[self], bytePositions[self] + 2)
-	bytePositions[self] += offset
+	local u16 = buffer.readu16(self.buffer, self.bytePositions)
+	local u8 = buffer.readu8(self.buffer, self.bytePositions + 2)
+	self.bytePositions += offset
 	local value = u16 * 256 + u8
 	return value
 end
 
 function bufferReader:readi32() : number
 	local offset = offsetValues.i32
-	local value = buffer.readi32(buffers[self], bytePositions[self])
-	bytePositions[self]  += offset
+	local value = buffer.readi32(self.buffer, self.bytePositions)
+	self.bytePositions  += offset
 	return value
 end
 
 function bufferReader:readu32() : number
 	local offset = offsetValues.u32
-	local value = buffer.readu32(buffers[self], bytePositions[self])
-	bytePositions[self]  += offset
+	local value = buffer.readu32(self.buffer, self.bytePositions)
+	self.bytePositions  += offset
 	return value
 end
 
 function bufferReader:readf32() : number
 	local offset = offsetValues.f32
-	local value = buffer.readf32(buffers[self], bytePositions[self])
-	bytePositions[self]  += offset
+	local value = buffer.readf32(self.buffer, self.bytePositions)
+	self.bytePositions  += offset
 	return value
 end
 
 function bufferReader:readf64() : number
 	local offset = offsetValues.f64
-	local value = buffer.readf64(buffers[self], bytePositions[self])
-	bytePositions[self]  += offset
+	local value = buffer.readf64(self.buffer, self.bytePositions)
+	self.bytePositions  += offset
 	return value
 end
 
@@ -191,8 +190,8 @@ end
 
 function bufferReader:readString() : string
 	local length = self:readVarietyInt()
-	local string = buffer.readstring(buffers[self], bytePositions[self], length)
-	bytePositions[self] += length
+	local string = buffer.readstring(self.buffer, self.bytePositions, length)
+	self.bytePositions += length
 	return string
 end
 
@@ -254,40 +253,38 @@ function bufferReader:readDict(keyType, fieldType)
 end
 
 function bufferReader:readStructs(schema)
-	local function readField(fieldSchema)
-		if type(fieldSchema) == "number" then
-			return mapFunctions[fieldSchema](self)
-		elseif type(fieldSchema) == "table" then
-			if #fieldSchema == 2 then
-				local dictSize = self:readVarietyInt()
-				local dict = {}
-				for i = 1, dictSize do
-					local dictKey = readField(fieldSchema[1])
-					dict[dictKey] = readField(fieldSchema[2])
-				end
-				return dict
-			else
-				local subStruct = {}
-				local subKeys = {}
-				for subFieldName in fieldSchema do
-					table.insert(subKeys, subFieldName)
-				end
-				table.sort(subKeys)
-				for i, subFieldName in subKeys do
-					subStruct[subFieldName] = readField(fieldSchema[subFieldName])
-				end
-				return subStruct
+	if type(schema) == "number" then
+		return mapFunctions[schema](self)
+	elseif type(schema) == "table" then
+		if #schema == 2 then
+			local dictSize = self:readVarietyInt()
+			local dict = {}
+			for i = 1, dictSize do
+				local dictKey = self:readStructs(schema[1])
+				dict[dictKey] = self:readStructs(schema[2])
 			end
+			return dict
 		else
-			error(`Schema not recognized`)
+			local subStruct = {}
+			local subKeys = {}
+			for subFieldName in schema do
+				table.insert(subKeys, subFieldName)
+			end
+			table.sort(subKeys)
+
+			for i, subFieldName in ipairs(subKeys) do
+				subStruct[subFieldName] = self:readStructs(schema[subFieldName])
+			end
+			return subStruct
 		end
+	else
+		error("Schema not recognized")
 	end
-	return readField(schema)
 end
 
 function bufferReader:setBuffer(newBuffer: buffer)
-	buffers[self] = newBuffer
-	bytePositions[self] = 0
+	self.buffer = newBuffer
+	self.bytePositions = 0
 end
 
-return bufferReader :: bufferReader
+return bufferReader 

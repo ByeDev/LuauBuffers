@@ -1,5 +1,7 @@
 --!strict
 export type bufferReader = {
+    buffer: buffer,
+	bytePositions: number,
     new: (inputBuffer: buffer?) -> bufferReader,
 	readi8: (self: bufferReader) -> number,
 	readu8: (self: bufferReader) -> number,
@@ -24,7 +26,9 @@ export type bufferReader = {
 }
 
 export type bufferWriter = {
-	new: (size: number?) -> bufferWriter,
+	buffer: buffer,
+	bytePositions: number,
+    new: (size: number?) -> bufferWriter,
 	writei8: (self: bufferWriter, value: number) -> (),
 	writeu8: (self: bufferWriter, value: number) -> (),
 	writei16: (self: bufferWriter, value: number) -> (),
