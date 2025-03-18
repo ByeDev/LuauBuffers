@@ -56,8 +56,7 @@ network:bindUnreliableServerEvent("CharacterReplication", function(player, writt
 	local newPos = info.writtenCFrame.Position
 	if lastPos then
 		local distance = (newPos - lastPos).Magnitude
-		local maxAllowedDistance = MAX_DISTANCE * tickRate  
-		if distance > maxAllowedDistance then
+		if distance > MAX_DISTANCE then
 			warn(`{player} is schmovin and groovin too fast`)
 			return 
 		end
