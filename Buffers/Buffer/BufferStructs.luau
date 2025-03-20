@@ -69,24 +69,48 @@ bufferStructs.travelersClubCombat = {
 
 bufferStructs.playerData = {
 	tokens = u24,
-    scarebux = u24,
-    level = u16,
-    skins = dict(str,u8),
-    wins = u24,
-    losses = u24,
-    achievements = dict(str,u8),
-    passes = dict(str,u8),
+	scarebux = u24,
+	level = u16,
+	skins = dict(str,u8),
+	wins = u24,
+	losses = u24,
+	achievements = dict(str,u8),
+	passes = dict(str,u8),
 }
-
+ 
 bufferStructs.characterReplication = {
-	writtenCFrame = CF,
-	timeStamp = f32,
+	cframe = CF,
+	timeStamp = f64,
 }
 
-bufferStructs.characterReplicationClient = {
+bufferStructs.playerReplicationTable = arrayOf({
+	player = u8,    
+	cframe = CF,    
+	timeStamp = f64 
+}, u8) 
+
+
+bufferStructs.attackSendClient = {
+	attackTime = f64,
+	attackSize = V3,
+	attackDirection = V3,
+	hitPlayers = arrayOf(str, u8)
+}
+
+
+bufferStructs.playerInputsClient = {
+	input = u8,
+	heldDown = u8,
+	sequenceNumber = u24,
+	timeStamp = f64,
+}
+
+bufferStructs.playerInputsServer =  {
 	player = u8,
-	writtenCFrame = CF,
-	originalTime = f32,
+	input = u8,
+	heldDown = u8,
+	sequenceNumber = u24,
+	timeStamp = f64,
 }
 
 return bufferStructs
