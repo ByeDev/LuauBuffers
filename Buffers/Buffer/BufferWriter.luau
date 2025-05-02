@@ -356,7 +356,7 @@ function bufferWriter:writeStructs(schema, data)
 				table.insert(subKeys, subName)
 			end
 			table.sort(subKeys)
-			for _, subName in ipairs(subKeys) do
+			for _, subName in subKeys do
 				local subValue = data[subName]
 				if subValue ~= nil then
 					local subSchema = schema[subName]
