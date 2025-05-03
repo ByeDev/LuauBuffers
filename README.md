@@ -1,6 +1,7 @@
 Luau Buffers to reduce your bandwith usage!
 
 Features:
+
 -Compresses CFrame, sends as quaternion
 
 -SERDES
