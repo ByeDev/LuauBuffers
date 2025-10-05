@@ -148,11 +148,7 @@ function bufferWriter:writef16(value: number)
 	local offset = offsetValues.f16
 	spaceCheck(self, offset)
 	-- edgecases
-	if value ~= value then
-		self:writeu8(255)
-		self:writeu8(192)
-		return
-	elseif value > 65504 then
+	if value > 65504 then
 		self:writeu8(251)
 		self:writeu8(255)
 		return
